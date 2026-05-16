@@ -2,34 +2,38 @@ import Editor from "@monaco-editor/react";
 
 type Props = {
   value: string;
-  onChange: (val: string) => void;
-  onReset: () => void;
+  onChange?: (val: string) => void;
+  onReset?: () => void;
+  readOnly?: boolean;
 };
 
-export default function CodeEditor({ value, onChange, onReset }: Props) {
+export default function CodeEditor({ value, onChange, onReset, readOnly = false }: Props) {
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between px-4 py-2 border-b border-forge-border">
-        <span className="label">Solution</span>
-        <button
-          onClick={() => {
-            if (confirm("Reset your code to the starter template?")) {
-              onReset();
-            }
-          }}
-          className="text-[11px] font-sans text-forge-muted hover:text-forge-subtext transition-colors"
-        >
-          Reset code
-        </button>
-      </div>
+      {!readOnly && (
+        <div className="flex items-center justify-between px-4 py-2 border-b border-forge-border">
+          <span className="label">Solution</span>
+          <button
+            onClick={() => {
+              if (confirm("Reset your code to the starter template?")) {
+                onReset?.();
+              }
+            }}
+            className="text-[11px] font-sans text-forge-muted hover:text-forge-subtext transition-colors"
+          >
+            Reset code
+          </button>
+        </div>
+      )}
       <div className="flex-1 min-h-0">
         <Editor
           height="100%"
           language="python"
           theme="vs-dark"
           value={value}
-          onChange={(v) => onChange(v ?? "")}
+          onChange={(v) => onChange?.(v ?? "")}
           options={{
+            readOnly,
             fontFamily: "JetBrains Mono, monospace",
             fontSize: 14,
             lineHeight: 22,

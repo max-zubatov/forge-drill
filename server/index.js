@@ -1,6 +1,11 @@
-import "dotenv/config";
+import { config } from "dotenv";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
 import express from "express";
 import cors from "cors";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+config({ path: join(__dirname, ".env"), override: true });
 
 const app = express();
 const PORT = 3001;
@@ -25,7 +30,7 @@ app.post("/api/claude", async (req, res) => {
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-5",
-        max_tokens: 2000,
+        max_tokens: 4096,
         system,
         messages: [{ role: "user", content: user }],
       }),

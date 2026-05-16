@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { PROBLEMS, Problem } from "./data/problems";
 import { SYSTEM_INTERVIEWER, SYSTEM_HELPER } from "./data/prompts";
 import { callClaude } from "./lib/api";
@@ -13,9 +13,11 @@ import {
 } from "./lib/storage";
 import ProblemSidebar from "./components/ProblemSidebar";
 import CodeEditor from "./components/CodeEditor";
+import OutputPanel from "./components/OutputPanel";
 import Timer from "./components/Timer";
 import TipsModal from "./components/TipsModal";
 import EvaluationCard, { EvalResult } from "./components/EvaluationCard";
+import { usePyodide, RunOutput } from "./lib/usePyodide";
 
 type AIState =
   | { kind: "idle" }
@@ -110,6 +112,10 @@ export default function App() {
   const [progress, setProgress] = useState<Record<string, ProblemProgress>>(
     getAllProgress
   );
+  const [sampleCode, setSampleCode] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"solution" | "sample">("solution");
+  const [runOutput, setRunOutput] = useState<RunOutput | null>(null);
+  const { loadState: pyLoadState, running: pyRunning, runCode } = usePyodide();
 
   const refreshProgress = useCallback(() => {
     setProgress(getAllProgress());
@@ -119,6 +125,15 @@ export default function App() {
     setSelected(p);
     setCodeState(getCode(p.id, p.starter));
     setAiState({ kind: "idle" });
+    setSampleCode(null);
+    setActiveTab("solution");
+    setRunOutput(null);
+  };
+
+  const handleRun = async () => {
+    const codeToRun = activeTab === "sample" && sampleCode ? sampleCode : code;
+    const result = await runCode(codeToRun);
+    setRunOutput(result);
   };
 
   const handleCodeChange = (val: string) => {
@@ -176,7 +191,9 @@ export default function App() {
         system: SYSTEM_HELPER,
         user: buildSolutionPrompt(selected),
       });
-      setAiState({ kind: "solution", code: res.text });
+      setSampleCode(res.text);
+      setActiveTab("sample");
+      setAiState({ kind: "idle" });
     } catch (e) {
       setAiState({ kind: "error", message: String(e) });
     }
@@ -296,18 +313,84 @@ export default function App() {
             </div>
           </div>
 
-          {/* Right: editor + action buttons */}
+          {/* Right: editor + output + action buttons */}
           <div className="flex-1 min-w-0 flex flex-col">
-            <div className="flex-1 min-h-0">
-              <CodeEditor
-                value={code}
-                onChange={handleCodeChange}
-                onReset={handleReset}
-              />
+
+            {/* Tab bar */}
+            <div className="shrink-0 flex items-stretch border-b border-forge-border">
+              <button
+                onClick={() => setActiveTab("solution")}
+                className={`px-5 py-2.5 text-xs font-sans border-r border-forge-border transition-colors ${
+                  activeTab === "solution"
+                    ? "text-forge-text bg-forge-orange/10 border-b-2 border-b-forge-orange"
+                    : "text-forge-muted hover:text-forge-subtext"
+                }`}
+              >
+                Solution
+              </button>
+              {sampleCode && (
+                <button
+                  onClick={() => setActiveTab("sample")}
+                  className={`px-5 py-2.5 text-xs font-sans border-r border-forge-border transition-colors flex items-center gap-2 ${
+                    activeTab === "sample"
+                      ? "text-forge-text bg-forge-orange/10 border-b-2 border-b-forge-orange"
+                      : "text-forge-muted hover:text-forge-subtext"
+                  }`}
+                >
+                  Sample Solution
+                  <span
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSampleCode(null);
+                      setActiveTab("solution");
+                    }}
+                    className="text-forge-muted hover:text-forge-subtext leading-none"
+                    title="Close"
+                  >
+                    ×
+                  </span>
+                </button>
+              )}
             </div>
 
-            {/* AI Actions — pinned below editor */}
+            {/* Editor */}
+            <div className="flex-1 min-h-0">
+              {activeTab === "solution" ? (
+                <CodeEditor
+                  value={code}
+                  onChange={handleCodeChange}
+                  onReset={handleReset}
+                />
+              ) : (
+                <CodeEditor
+                  value={sampleCode ?? ""}
+                  readOnly
+                />
+              )}
+            </div>
+
+            {/* Output panel */}
+            <OutputPanel
+              output={runOutput}
+              loading={pyRunning}
+              loadingPyodide={pyLoadState === "loading"}
+              onClear={() => setRunOutput(null)}
+            />
+
+            {/* Action bar */}
             <div className="shrink-0 flex items-center gap-3 px-4 py-3 border-t border-forge-border">
+              <button
+                onClick={handleRun}
+                disabled={pyRunning || isLoading}
+                className="py-2 px-5 text-sm font-sans border border-forge-border text-forge-subtext disabled:opacity-40 hover:border-forge-muted transition-colors"
+              >
+                {pyRunning
+                  ? pyLoadState === "loading"
+                    ? "Loading…"
+                    : "Running…"
+                  : "Run"}
+              </button>
+              <div className="w-px h-4 bg-forge-border" />
               <button
                 onClick={handleEvaluate}
                 disabled={isLoading}
