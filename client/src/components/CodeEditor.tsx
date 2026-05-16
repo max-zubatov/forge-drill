@@ -11,8 +11,7 @@ export default function CodeEditor({ value, onChange, onReset, readOnly = false 
   return (
     <div className="flex flex-col h-full">
       {!readOnly && (
-        <div className="flex items-center justify-between px-4 py-2 border-b border-forge-border">
-          <span className="label">Solution</span>
+        <div className="flex items-center justify-end px-4 py-2 border-b border-forge-border">
           <button
             onClick={() => {
               if (confirm("Reset your code to the starter template?")) {

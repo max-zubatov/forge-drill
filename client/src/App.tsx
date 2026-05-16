@@ -326,7 +326,7 @@ export default function App() {
                     : "text-forge-muted hover:text-forge-subtext"
                 }`}
               >
-                Solution
+                My Solution
               </button>
               {sampleCode && (
                 <button
