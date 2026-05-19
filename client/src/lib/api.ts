@@ -2,6 +2,8 @@ export type ClaudeRequest = {
   system: string;
   user: string;
   returnJson?: boolean;
+  traceName?: string;
+  metadata?: Record<string, unknown>;
 };
 
 export type ClaudeResponse = {

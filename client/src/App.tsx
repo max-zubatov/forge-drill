@@ -154,6 +154,8 @@ export default function App() {
         system: SYSTEM_INTERVIEWER,
         user: buildEvalPrompt(selected, code),
         returnJson: true,
+        traceName: "evaluate",
+        metadata: { problemId: selected.id, problemTitle: selected.title, difficulty: selected.difficulty },
       });
       if (!res.json) throw new Error("No JSON in response");
       const result = res.json as EvalResult;
@@ -171,6 +173,8 @@ export default function App() {
       const res = await callClaude({
         system: SYSTEM_HELPER,
         user: buildHintPrompt(selected, code),
+        traceName: "hint",
+        metadata: { problemId: selected.id, problemTitle: selected.title, difficulty: selected.difficulty },
       });
       setAiState({ kind: "hint", text: res.text });
     } catch (e) {
@@ -190,6 +194,8 @@ export default function App() {
       const res = await callClaude({
         system: SYSTEM_HELPER,
         user: buildSolutionPrompt(selected),
+        traceName: "sample-solution",
+        metadata: { problemId: selected.id, problemTitle: selected.title, difficulty: selected.difficulty },
       });
       setSampleCode(res.text);
       setActiveTab("sample");
