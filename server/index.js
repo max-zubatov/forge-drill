@@ -12,18 +12,23 @@ const app = express();
 const PORT = 3001;
 
 // Langfuse is optional — only initialised when keys are present
-const langfuse =
-  process.env.LANGFUSE_SECRET_KEY && process.env.LANGFUSE_PUBLIC_KEY
-    ? new Langfuse({
-        secretKey: process.env.LANGFUSE_SECRET_KEY,
-        publicKey: process.env.LANGFUSE_PUBLIC_KEY,
-        baseUrl: process.env.LANGFUSE_BASE_URL ?? "https://cloud.langfuse.com",
-        flushAt: 1, // send each event immediately in dev
-      })
-    : null;
+let langfuse = null;
 
-if (langfuse) {
-  console.log("Langfuse observability enabled");
+if (process.env.LANGFUSE_SECRET_KEY && process.env.LANGFUSE_PUBLIC_KEY) {
+  const baseUrl = process.env.LANGFUSE_BASE_URL ?? "https://cloud.langfuse.com";
+  langfuse = new Langfuse({
+    secretKey: process.env.LANGFUSE_SECRET_KEY,
+    publicKey: process.env.LANGFUSE_PUBLIC_KEY,
+    baseUrl,
+    flushAt: 1,
+  });
+
+  // Verify connectivity on startup with a test trace
+  console.log(`Langfuse: connecting to ${baseUrl} …`);
+  const t = langfuse.trace({ name: "startup-check" });
+  langfuse.flushAsync()
+    .then(() => console.log("Langfuse: connected ✓"))
+    .catch((e) => console.error("Langfuse: flush error —", e.message));
 }
 
 app.use(cors({ origin: ["http://localhost:5173", "http://127.0.0.1:5173"] }));
@@ -68,7 +73,7 @@ app.post("/api/claude", async (req, res) => {
     if (!response.ok) {
       const err = await response.text();
       generation?.end({ output: err, level: "ERROR" });
-      await langfuse?.flushAsync();
+      await langfuse?.flushAsync().catch((e) => console.error("Langfuse flush error:", e.message));
       return res.status(response.status).json({ error: err });
     }
 
@@ -86,7 +91,7 @@ app.post("/api/claude", async (req, res) => {
     });
 
     if (!returnJson) {
-      await langfuse?.flushAsync();
+      await langfuse?.flushAsync().catch((e) => console.error("Langfuse flush error:", e.message));
       return res.json({ text });
     }
 
@@ -115,10 +120,10 @@ app.post("/api/claude", async (req, res) => {
         }
       }
 
-      await langfuse?.flushAsync();
+      await langfuse?.flushAsync().catch((e) => console.error("Langfuse flush error:", e.message));
       return res.json({ text, json });
     } catch {
-      await langfuse?.flushAsync();
+      await langfuse?.flushAsync().catch((e) => console.error("Langfuse flush error:", e.message));
       return res.status(502).json({ error: "Failed to parse JSON from model", raw: text });
     }
   } catch (err) {

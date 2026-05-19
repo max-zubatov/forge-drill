@@ -18,6 +18,7 @@ import Timer from "./components/Timer";
 import TipsModal from "./components/TipsModal";
 import EvaluationCard, { EvalResult } from "./components/EvaluationCard";
 import { usePyodide, RunOutput } from "./lib/usePyodide";
+import { saveCodeSnapshot, saveEvaluation } from "./lib/db";
 
 type AIState =
   | { kind: "idle" }
@@ -162,6 +163,9 @@ export default function App() {
       recordEvaluation(selected.id, result.overall_score);
       refreshProgress();
       setAiState({ kind: "evaluation", result });
+      // Persist to Supabase (non-blocking)
+      saveCodeSnapshot(selected.id, code);
+      saveEvaluation(selected.id, code, result);
     } catch (e) {
       setAiState({ kind: "error", message: String(e) });
     }
