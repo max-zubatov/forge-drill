@@ -34,6 +34,82 @@ if (process.env.LANGFUSE_SECRET_KEY && process.env.LANGFUSE_PUBLIC_KEY) {
 app.use(cors({ origin: ["http://localhost:5173", "http://127.0.0.1:5173"] }));
 app.use(express.json());
 
+// ── Supabase auto-migration ───────────────────────────────────────────────────
+const MIGRATION_SQL = `
+create table if not exists code_snapshots (
+  session_id text not null,
+  problem_id text not null,
+  code       text not null,
+  updated_at timestamptz default now(),
+  primary key (session_id, problem_id)
+);
+
+create table if not exists problem_attempts (
+  id                    uuid default gen_random_uuid() primary key,
+  session_id            text not null,
+  problem_id            text not null,
+  code                  text not null,
+  overall_score         integer not null,
+  verdict               text not null,
+  summary               text,
+  strengths             jsonb,
+  weaknesses            jsonb,
+  rubric                jsonb,
+  key_improvement       text,
+  interviewer_follow_up text,
+  created_at            timestamptz default now()
+);
+
+alter table code_snapshots   enable row level security;
+alter table problem_attempts enable row level security;
+
+do $$ begin
+  if not exists (select 1 from pg_policies where tablename = 'code_snapshots'   and policyname = 'public insert') then
+    create policy "public insert" on code_snapshots   for insert with check (true); end if;
+  if not exists (select 1 from pg_policies where tablename = 'code_snapshots'   and policyname = 'public update') then
+    create policy "public update" on code_snapshots   for update using (true); end if;
+  if not exists (select 1 from pg_policies where tablename = 'code_snapshots'   and policyname = 'public select') then
+    create policy "public select" on code_snapshots   for select using (true); end if;
+  if not exists (select 1 from pg_policies where tablename = 'problem_attempts' and policyname = 'public insert') then
+    create policy "public insert" on problem_attempts for insert with check (true); end if;
+  if not exists (select 1 from pg_policies where tablename = 'problem_attempts' and policyname = 'public select') then
+    create policy "public select" on problem_attempts for select using (true); end if;
+end $$;
+`;
+
+async function runMigration() {
+  const url  = process.env.SUPABASE_URL;
+  const key  = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return; // Supabase not configured — skip
+
+  // Extract project ref from URL: https://<ref>.supabase.co
+  const ref = url.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1];
+  if (!ref) { console.error("Supabase: could not parse project ref from URL"); return; }
+
+  console.log("Supabase: running migration…");
+  try {
+    const res = await fetch(`https://api.supabase.com/v1/projects/${ref}/database/query`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${key}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ query: MIGRATION_SQL }),
+    });
+
+    if (res.ok) {
+      console.log("Supabase: tables ready ✓");
+    } else {
+      const body = await res.json().catch(() => ({}));
+      console.error("Supabase: migration failed —", body.message ?? res.statusText);
+    }
+  } catch (e) {
+    console.error("Supabase: migration error —", e.message);
+  }
+}
+
+runMigration();
+
 app.post("/api/claude", async (req, res) => {
   const { system, user, returnJson, traceName, metadata } = req.body;
 

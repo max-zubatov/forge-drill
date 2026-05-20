@@ -54,14 +54,22 @@ By default the app stores everything in your browser's localStorage — no datab
 
 **1.** Create a free project at [supabase.com](https://supabase.com)
 
-**2.** Run the migration — in your Supabase dashboard go to **SQL Editor → New query**, paste the contents of [`supabase/migrations/001_init.sql`](supabase/migrations/001_init.sql), and click **Run**
+**2.** Add your keys — both files are in the root of the project:
 
-**3.** Add your keys to `client/.env.local`:
+`server/.env`
+```
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+```
+
+`client/.env.local`
 ```
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=your-anon-key
 ```
 
-Both values are found in your Supabase dashboard under **Project Settings → API**.
+All values are in your Supabase dashboard under **Project Settings → API**.
 
-Restart `npm run dev` and the app will start persisting to Supabase automatically. If the keys are absent or the migration hasn't been run, the app falls back to localStorage silently.
+**3.** Restart `npm run dev` — the server will automatically create the required tables on startup. No SQL to run manually.
+
+If the keys are absent, the app falls back to localStorage silently.
