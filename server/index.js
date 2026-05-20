@@ -78,9 +78,9 @@ end $$;
 `;
 
 async function runMigration() {
-  const url  = process.env.SUPABASE_URL;
-  const key  = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) return; // Supabase not configured — skip
+  const url   = process.env.SUPABASE_URL;
+  const token = process.env.SUPABASE_ACCESS_TOKEN; // Personal Access Token for Management API
+  if (!url || !token) return; // Supabase not configured — skip
 
   // Extract project ref from URL: https://<ref>.supabase.co
   const ref = url.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1];
@@ -91,7 +91,7 @@ async function runMigration() {
     const res = await fetch(`https://api.supabase.com/v1/projects/${ref}/database/query`, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${key}`,
+        "Authorization": `Bearer ${token}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ query: MIGRATION_SQL }),
