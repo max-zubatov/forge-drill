@@ -21,6 +21,7 @@ function isTableMissing(code: string | null | undefined): boolean {
 }
 
 export async function saveCodeSnapshot(problemId: string, code: string): Promise<void> {
+  if (!supabase) return;
   const { error } = await supabase.from("code_snapshots").upsert(
     { session_id: getSessionId(), problem_id: problemId, code, updated_at: new Date().toISOString() },
     { onConflict: "session_id,problem_id" }
@@ -35,6 +36,7 @@ export async function saveEvaluation(
   code: string,
   result: EvalResult
 ): Promise<void> {
+  if (!supabase) return;
   const { error } = await supabase.from("problem_attempts").insert({
     session_id: getSessionId(),
     problem_id: problemId,
@@ -54,6 +56,7 @@ export async function saveEvaluation(
 }
 
 export async function loadLatestCode(problemId: string): Promise<string | null> {
+  if (!supabase) return null;
   const { data, error } = await supabase
     .from("code_snapshots")
     .select("code")

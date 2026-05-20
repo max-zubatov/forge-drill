@@ -1,6 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 
-const url = import.meta.env.VITE_SUPABASE_URL as string;
-const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
 
-export const supabase = createClient(url, key);
+// Supabase is optional — only initialise if both vars are present.
+// Missing vars are fine: db.ts falls back to localStorage silently.
+export const supabase = url && key ? createClient(url, key) : null;
