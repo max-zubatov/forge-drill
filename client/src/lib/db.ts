@@ -12,12 +12,22 @@ function getSessionId(): string {
   return id;
 }
 
+// Supabase is optional. If the tables don't exist (migration not run) or the
+// keys aren't set, these functions silently no-op and the app continues with
+// localStorage only. The one-time setup is in supabase/migrations/001_init.sql.
+function isTableMissing(code: string | null | undefined): boolean {
+  // Supabase returns code "42P01" when a table doesn't exist
+  return code === "42P01";
+}
+
 export async function saveCodeSnapshot(problemId: string, code: string): Promise<void> {
   const { error } = await supabase.from("code_snapshots").upsert(
     { session_id: getSessionId(), problem_id: problemId, code, updated_at: new Date().toISOString() },
     { onConflict: "session_id,problem_id" }
   );
-  if (error) console.error("Supabase saveCodeSnapshot:", error.message);
+  if (error && !isTableMissing(error.code)) {
+    console.error("Supabase saveCodeSnapshot:", error.message);
+  }
 }
 
 export async function saveEvaluation(
@@ -38,7 +48,9 @@ export async function saveEvaluation(
     key_improvement: result.key_improvement,
     interviewer_follow_up: result.interviewer_follow_up,
   });
-  if (error) console.error("Supabase saveEvaluation:", error.message);
+  if (error && !isTableMissing(error.code)) {
+    console.error("Supabase saveEvaluation:", error.message);
+  }
 }
 
 export async function loadLatestCode(problemId: string): Promise<string | null> {
@@ -48,6 +60,8 @@ export async function loadLatestCode(problemId: string): Promise<string | null> 
     .eq("session_id", getSessionId())
     .eq("problem_id", problemId)
     .maybeSingle();
-  if (error) console.error("Supabase loadLatestCode:", error.message);
+  if (error && !isTableMissing(error.code)) {
+    console.error("Supabase loadLatestCode:", error.message);
+  }
   return data?.code ?? null;
 }

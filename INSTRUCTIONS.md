@@ -45,3 +45,23 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 5. Use **Hint** if you're stuck, or **Sample Solution** to see a reference implementation
 
 Your code and scores are saved automatically in the browser between sessions.
+
+---
+
+## Optional: cloud database (Supabase)
+
+By default the app stores everything in your browser's localStorage — no database needed. If you'd like scores and code to persist across devices or browsers, you can connect a free Supabase project.
+
+**1.** Create a free project at [supabase.com](https://supabase.com)
+
+**2.** Run the migration — in your Supabase dashboard go to **SQL Editor → New query**, paste the contents of [`supabase/migrations/001_init.sql`](supabase/migrations/001_init.sql), and click **Run**
+
+**3.** Add your keys to `client/.env.local`:
+```
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=your-anon-key
+```
+
+Both values are found in your Supabase dashboard under **Project Settings → API**.
+
+Restart `npm run dev` and the app will start persisting to Supabase automatically. If the keys are absent or the migration hasn't been run, the app falls back to localStorage silently.
