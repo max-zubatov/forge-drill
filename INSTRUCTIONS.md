@@ -50,26 +50,29 @@ Your code and scores are saved automatically in the browser between sessions.
 
 ## Optional: cloud database (Supabase)
 
-By default the app stores everything in your browser's localStorage — no database needed. If you'd like scores and code to persist across devices or browsers, you can connect a free Supabase project.
+By default the app stores everything in your browser's localStorage — no database needed. If you'd like scores and code to persist across devices or browsers, connect a free Supabase project. The server will create the required tables automatically on first startup.
 
 **1.** Create a free project at [supabase.com](https://supabase.com)
 
-**2.** Add your keys — both files are in the root of the project:
+**2.** Create a Personal Access Token at [supabase.com/dashboard/account/tokens](https://supabase.com/dashboard/account/tokens)
 
-`server/.env`
+**3.** Add the following to `server/.env`:
+
 ```
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+SUPABASE_ACCESS_TOKEN=your-personal-access-token
 ```
 
-`client/.env.local`
+**4.** Add the following to `client/.env.local` (create this file in the `client/` folder):
+
 ```
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=your-anon-key
 ```
 
-All values are in your Supabase dashboard under **Project Settings → API**.
+The `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `VITE_SUPABASE_PUBLISHABLE_KEY` are all found in your Supabase dashboard under **Project Settings → API**.
 
-**3.** Restart `npm run dev` — the server will automatically create the required tables on startup. No SQL to run manually.
+**5.** Restart `npm run dev` — you'll see `Supabase: tables ready ✓` in the server console confirming the database is set up.
 
-If the keys are absent, the app falls back to localStorage silently.
+If any keys are missing, the app falls back to localStorage silently — nothing will break.
